@@ -1,1 +1,1 @@
-web: node app.js
+worker: node --trace-warnings app.js
