@@ -18,7 +18,7 @@ mongoose.connect(process.env.MONGO_PATH, {
 })
 
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: process.env.FRONTEND_HOST + ':' + process.env.FRONTEND_PORT,
     credentials: true
 }))
 

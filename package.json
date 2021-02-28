@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bungie-net-api": "git+https://github.com/CrakinDev/node-bungie-api.git",
     "connect-mongo": "^4.1.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
