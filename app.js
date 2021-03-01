@@ -17,6 +17,8 @@ mongoose.connect(process.env.MONGO_PATH, {
     useUnifiedTopology: true
 })
 
+app.use(express.json())
+
 app.use(cors({
     origin: process.env.FRONTEND_HOST + ':' + process.env.FRONTEND_PORT,
     credentials: true

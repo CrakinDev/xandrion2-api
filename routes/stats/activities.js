@@ -1,10 +1,10 @@
 const router = require('express').Router()
 
-const BungieLib = require( 'bungie-net-api' );
+const BungieLib = require( 'bungie-net-api' )
 
 const mongo = require('../../database/mongo')
-const discordGuardianSchema = require("../../database/schemas/User");
-const guardianActivitySchema = require('../../database/schemas/guardian-activity-schema');
+const discordGuardianSchema = require("../../database/schemas/User")
+const guardianActivitySchema = require('../../database/schemas/guardian-activity-schema')
 
 router.get('/:bungieAcct/:activityId', async (req, res) => {
     // if(req.user)

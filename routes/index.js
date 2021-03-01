@@ -1,10 +1,12 @@
 const router = require('express').Router()
 const auth = require('./auth')
 const discord = require('./discord')
-const strikes = require('./stats/activities')
+const register = require('./register')
+const activities = require('./stats/activities')
 
 router.use('/auth', auth)
 router.use('/discord', discord)
-router.use('/stats/activities', strikes)
+router.use('/register', register)
+router.use('/stats/activities', activities)
 
 module.exports = router
