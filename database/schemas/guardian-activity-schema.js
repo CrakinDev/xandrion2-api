@@ -9,9 +9,13 @@ const guardianActivitiesSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    directorActivityHash: {
+    name: {
         type: String,
-        required: true
+        required: false
+    },
+    icon: {
+        type: String,
+        required: false
     },
     instanceId: {
         type: String,

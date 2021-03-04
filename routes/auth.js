@@ -11,6 +11,7 @@ router.get('/discord/redirect', passport.authenticate('discord'), (req, res) => 
     }
     else
     {
+        console.log(req.user.discordId)
         res.redirect(`${process.env.FRONTEND_HOST}:${process.env.FRONTEND_PORT}/register/${req.user.discordId}`)
     }
 })

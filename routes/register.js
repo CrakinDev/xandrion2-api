@@ -22,8 +22,7 @@ router.post('/:discordId', async (req, res) => {
     const bungieApi = new BungieLib({"key" : process.env.BUNGIE_KEY, "clientId" : process.env.BUNGIE_CLIENT_ID, "clientSecret" : process.env.BUNGIE_CLIENT_SECRET})
 
     // Bungie API Call
-    await bungieApi.Destiny2.searchPlayer( username, platform ).then(async (acctData) => {
-    console.log(acctData.Response[0])               
+    await bungieApi.Destiny2.searchPlayer( username, platform ).then(async (acctData) => {            
 
         // If Bungie Response is valid
         if(acctData.ErrorCode === 1)
@@ -40,8 +39,8 @@ router.post('/:discordId', async (req, res) => {
                         },
                         {
                             discordId: discordId,
-                            platform: platform,
-                            name: username,
+                            bungiePlatform: platform,
+                            bungieName: username,
                             bungieAcct: bMembershipId,
                             characterIds: charData.Response.profile.data.characterIds
                         },

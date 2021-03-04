@@ -5,6 +5,8 @@ const BungieLib = require( 'bungie-net-api' )
 const mongo = require('../../database/mongo')
 const discordGuardianSchema = require("../../database/schemas/User")
 const guardianActivitySchema = require('../../database/schemas/guardian-activity-schema')
+const bungieApi = new BungieLib({"key" : process.env.BUNGIE_KEY, "clientId" : process.env.BUNGIE_CLIENT_ID, "clientSecret" : process.env.BUNGIE_CLIENT_SECRET}, ['destiny2'])
+bungieApi.Destiny2.init(['en'])
 
 router.get('/:bungieAcct/:activityId', async (req, res) => {
     // if(req.user)
@@ -23,7 +25,6 @@ router.get('/:bungieAcct/:activityId', async (req, res) => {
 
     let ErrorCode = 1
     let ErrorStatus = 'OK'
-
     // Account info does not exist in cache, fetch from db instance.
     let fetchedAccountData = {}
     await mongo().then(async (mongoose) => {
@@ -46,32 +47,53 @@ router.get('/:bungieAcct/:activityId', async (req, res) => {
 
     let activityPromises = []
     let allActivityData = []
-    const bungieApi = new BungieLib({"key" : process.env.BUNGIE_KEY, "clientId" : process.env.BUNGIE_CLIENT_ID, "clientSecret" : process.env.BUNGIE_CLIENT_SECRET})
-
     
     fetchedAccountData.characterIds.forEach((charId) => {
-        activityPromises.push(bungieApi.Destiny2.getActivityHistory({ 'characterId' : charId, 'destinyMembershipId' : fetchedAccountData.bungieAcct, 'membershipType' : 1, 'count' : 10, 'mode' : req.params.activityId, 'page' : 0 }))
+        activityPromises.push(bungieApi.Destiny2.getActivityHistory({ 'characterId' : charId, 'destinyMembershipId' : fetchedAccountData.bungieAcct, 'membershipType' : 1, 'mode' : req.params.activityId, 'count' : 10}))
     })
 
     await Promise.all(activityPromises).then((actData) => {
         try
         {
-            actData.forEach((data) => {
-                if(!data.ErrorCode === 1 || JSON.stringify(data.Response) === "{}")
-                {
-                    ErrorCode = data.ErrorCode
-                    ErrorStatus = (data.ErrorCode !== 1) ? data.ErrorStatus : 'No ' + getActivityType(activityMode) + ' data available.'
-                }
-                // Combine all data into a single array to be sorted/processed
-                allActivityData = allActivityData.concat(data.Response.activities)
-            })
-            
-            // Sort data to get the latest 10 activities (10 is current application limit)
-            allActivityData.sort((a, b) => {
-                const aTime = new Date(a.period)
-                const bTime = new Date(b.period)
-                return aTime.getTime() < bTime.getTime()
-            })
+            // Activity data may be undefined if the Bungie API is down/under maintenance.
+            if(actData !== undefined)
+            {
+                actData.forEach((data) => {
+                    // Activity Data may be initialized to array of one or more undefined elements.
+                    // While in the forEach, we can check for them as some characters may have played the activities being fetched while others have not.
+                    if(data !== undefined)
+                    {
+                        // Check for ErrorCode response from the Bungie API.
+                        if(!data.ErrorCode === 1 || JSON.stringify(data.Response) === "{}")
+                        {
+                            ErrorCode = data.ErrorCode
+                            ErrorStatus = (data.ErrorCode !== 1) ? data.ErrorStatus : 'No data available.'
+                        }
+                        // Combine all data into a single array to be sorted/processed
+                        allActivityData = allActivityData.concat(data.Response.activities)
+                    }
+                })
+    
+                // Sort data to get the latest 10 activities (10 is current application limit)
+                allActivityData.sort((a, b) => {
+                    const aTime = new Date(a.period)
+                    const bTime = new Date(b.period)
+                    return bTime - aTime
+                })
+                
+                // Certain static data is returned as a hash from the API. We need to query the manifest to get that info.
+                // In this case, we are getting the activity name from the returned hash value and querying the local manifest downloaded/read upon module initialization.
+                // The name and icon are then attached to the activity object to be passed to the response.
+                // Activity description and much more information is also available.
+                allActivityData.forEach(activity => {
+                    if(activity !== undefined)
+                    {
+                        const activityHashInfo = bungieApi.Destiny2.getDestinyManifestDefinition('DestinyActivityDefinition', activity.activityDetails.directorActivityHash)
+                        activity.activityDetails.name = activityHashInfo.displayProperties.name
+                        activity.activityDetails.icon = activityHashInfo.displayProperties.icon
+                    }
+                })
+            }
         }
         catch(e)
         {
@@ -94,22 +116,25 @@ router.get('/:bungieAcct/:activityId', async (req, res) => {
             // If a player has not played 10 activities of the type requested, parse as many as we can.
             let activitiesArray = []
             let activityLength = allActivityData.length
-            if(activityLength >= 10)
-            {
-                activityLength = 10
-            }
-            else
-            {
-                actCount = activityLength
-            }
+            // if(activityLength >= 10)
+            // {
+            //     activityLength = 10
+            // }
+            // else
+            // {
+            //     actCount = activityLength
+            // }
 
             allActivityData.slice(0, activityLength).forEach(activity => {
-                // Add relevant activity data to array of objects
-                activitiesArray.push(
+                if(activity !== undefined)
+                {
+                    // Add relevant activity data to array of objects
+                    activitiesArray.push(
                     {
                         accountId: req.params.bungieAcct,
                         timestamp: activity.period,
-                        directorActivityHash: activity.activityDetails.directorActivityHash,
+                        name: activity.activityDetails.name,
+                        icon: activity.activityDetails.icon,
                         instanceId: activity.activityDetails.instanceId,
                         mode: activity.activityDetails.mode,
                         platform: activity.activityDetails.membershipType,
@@ -123,19 +148,17 @@ router.get('/:bungieAcct/:activityId', async (req, res) => {
                         activityDurationSeconds: activity.values.activityDurationSeconds.basic.value
                     })
                 }
-            )
+            })
             
             
             // Insert fetched activity data to database collection
             await guardianActivitySchema.insertMany(activitiesArray)
 
-            console.log("Sending Response: ")
-            console.log(JSON.stringify(activitiesArray))
             res.send(JSON.stringify(activitiesArray))
         }
         finally
         {
-            mongoose.connection.close()
+            //mongoose.connection.close()
         }
     })
 
