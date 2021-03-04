@@ -7,12 +7,12 @@ router.get('/discord', passport.authenticate('discord'))
 router.get('/discord/redirect', passport.authenticate('discord'), (req, res) => {
     if(req.user.bungieAcct)
     {
-        res.redirect(`${process.env.FRONTEND_HOST}:${process.env.FRONTEND_PORT}/dashboard/${req.user.bungieAcct}`)
+        res.redirect(`${process.env.FRONTEND_HOST}/dashboard/${req.user.bungieAcct}`)
     }
     else
     {
         console.log(req.user.discordId)
-        res.redirect(`${process.env.FRONTEND_HOST}:${process.env.FRONTEND_PORT}/register/${req.user.discordId}`)
+        res.redirect(`${process.env.FRONTEND_HOST}/register/${req.user.discordId}`)
     }
 })
 
