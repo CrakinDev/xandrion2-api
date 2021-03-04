@@ -1,1 +1,1 @@
-worker: node --trace-warnings app.js
+worker: npm run start
