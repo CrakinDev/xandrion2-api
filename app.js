@@ -17,13 +17,16 @@ mongoose.connect(process.env.MONGO_PATH, {
     useUnifiedTopology: true
 })
 
+// Initialize Express for API Server support
 app.use(express.json())
 
+// Initialize CORS support
 app.use(cors({
     origin: process.env.FRONTEND_HOST,
     credentials: true
 }))
 
+// Initialize Session for session saving support
 app.use(session({
     secret: process.env.DASHBOARD_SECRET,
     cookie: {
@@ -40,6 +43,8 @@ app.use(session({
         }
     )
 }))
+
+// Initialize Passport for OAuth2 support
 app.use(passport.initialize())
 app.use(passport.session())
 
