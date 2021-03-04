@@ -34,6 +34,7 @@ app.use(session({
     },
     resave: false,
     saveUninitialized: false,
+    cookie: { sameSite: 'strict' },
     store: MongoStore.create(
         {
             mongoUrl: process.env.MONGO_PATH,
